@@ -18,7 +18,7 @@ const SECOND_ARGUMENT: u8 = 5;
 /// Can either be a 4-bit ansi color,
 /// a 6×6×6 cube color,
 /// or a grayscale value on the interval [0; 23].
-#[derive(Copy, Clone, Eq, Hash, Debug, Sequence)]
+#[derive(Copy, Clone, Eq, Debug, Sequence)]
 pub enum Ansi8Bit {
     Ansi4Bit(Ansi4Bit),
     Cube(Cube),
@@ -54,7 +54,7 @@ impl Color for Ansi8Bit {
             let Luma([luma]) = luma;
             let grayscale = (luma as f64 / 256.0 * 23.0).round() as u8;
 
-            return Ansi8Bit::Grayscale(Grayscale::new(grayscale)).into();
+            return Ansi8Bit::Grayscale(Grayscale::new(grayscale));
         }
 
         default_from_rgb(color)

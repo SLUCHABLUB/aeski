@@ -7,14 +7,14 @@ use image::{DynamicImage, GenericImageView, Pixel};
 use itertools::iproduct;
 use std::fmt::{Display, Formatter};
 
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct AsciiImage<Color> {
     width: usize,
     cells: Vec<AsciiCell<Color>>,
 }
 
 impl<C> AsciiImage<C> {
-    pub fn new() -> usize {
+    pub fn new() -> Self {
         Default::default()
     }
 
@@ -118,6 +118,16 @@ impl<C: Color> AsciiImage<C> {
 
     pub fn lines(&self) -> Vec<String> {
         (0..self.height()).map(|y| self.line(y).unwrap()).collect()
+    }
+}
+
+// Manually implemented since deriving would impose `C: Default` (a bug)
+impl<C> Default for AsciiImage<C> {
+    fn default() -> Self {
+        AsciiImage {
+            width: 0,
+            cells: vec![],
+        }
     }
 }
 
