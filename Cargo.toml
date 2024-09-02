@@ -1,0 +1,11 @@
+[package]
+name = "aeski"
+version = "0.1.0"
+authors = ["SLUCHABLUB"]
+edition = "2021"
+
+[dependencies]
+enum-iterator = "2.1.0"
+image = "0.25.2"
+itertools = "0.13.0"
+num-traits = "0.2.19"
