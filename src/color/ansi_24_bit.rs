@@ -17,6 +17,7 @@ pub struct Ansi24Bit {
 }
 
 impl Ansi24Bit {
+    #[must_use]
     pub const fn new(r: u8, g: u8, b: u8) -> Ansi24Bit {
         Ansi24Bit { r, g, b }
     }

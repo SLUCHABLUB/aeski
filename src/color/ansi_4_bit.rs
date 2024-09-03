@@ -37,10 +37,10 @@ impl Color for Ansi4Bit {
     }
 
     fn write_background(&self, mut to: impl Write) -> std::io::Result<()> {
-        to.write_all(&[self.color as u8 + BACKGROUND + self.is_bright as u8 * BRIGHT_OFFSET])
+        to.write_all(&[self.color as u8 + BACKGROUND + u8::from(self.is_bright) * BRIGHT_OFFSET])
     }
 
     fn write_foreground(&self, mut to: impl Write) -> std::io::Result<()> {
-        to.write_all(&[self.color as u8 + FOREGROUND + self.is_bright as u8 * BRIGHT_OFFSET])
+        to.write_all(&[self.color as u8 + FOREGROUND + u8::from(self.is_bright) * BRIGHT_OFFSET])
     }
 }

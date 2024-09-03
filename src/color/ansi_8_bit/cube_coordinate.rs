@@ -10,6 +10,7 @@ pub struct CubeCoordinate {
 
 impl CubeCoordinate {
     /// Clamps the argument.
+    #[must_use]
     pub fn new(value: u8) -> CubeCoordinate {
         CubeCoordinate {
             coordinate: value.clamp(0, 5),
@@ -17,6 +18,7 @@ impl CubeCoordinate {
     }
 
     /// Returns `None` if the argument is too large.
+    #[must_use]
     pub const fn try_new(value: u8) -> Option<CubeCoordinate> {
         if value <= 5 {
             Some(CubeCoordinate { coordinate: value })
@@ -26,6 +28,7 @@ impl CubeCoordinate {
     }
 
     /// Converts `self` to `u8`.
+    #[must_use]
     pub const fn get(&self) -> u8 {
         self.coordinate
     }

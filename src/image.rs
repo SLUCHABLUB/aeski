@@ -15,10 +15,16 @@ pub struct AsciiImage<Color> {
 }
 
 impl<C> AsciiImage<C> {
+    #[must_use]
     pub fn new() -> Self {
-        Default::default()
+        AsciiImage::default()
     }
 
+    /// Collects an iterator of cells into an image with the provided dimensions.
+    ///
+    /// # Errors
+    /// If the number of cells isn't `width * height`
+    /// the cells are collected into a `Vec` and returned.
     pub fn from_cells<Cells>(
         cells: Cells,
         width: usize,
@@ -37,17 +43,20 @@ impl<C> AsciiImage<C> {
     }
 
     /// The width of the image in characters
+    #[must_use]
     pub const fn width(&self) -> usize {
         self.width
     }
 
     /// The height of the image in characters
+    #[must_use]
     pub fn height(&self) -> usize {
         self.cells.len() / self.width
     }
 
     /// All the cells that make up the image.
     /// Going from right to left, wrapping from top to bottom.
+    #[must_use]
     pub fn cells(&self) -> &[AsciiCell<C>] {
         &self.cells
     }
@@ -142,6 +151,7 @@ impl<C: Color> AsciiImage<C> {
         Ok(())
     }
 
+    #[must_use]
     pub fn line(&self, y: usize) -> Option<String> {
         if self.height() <= y {
             return None;
@@ -154,6 +164,7 @@ impl<C: Color> AsciiImage<C> {
         Some(line)
     }
 
+    #[must_use]
     pub fn lines(&self) -> Vec<String> {
         (0..self.height()).map(|y| self.line(y).unwrap()).collect()
     }

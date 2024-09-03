@@ -16,6 +16,7 @@ pub struct Grayscale {
 
 impl Grayscale {
     /// Constructs a new `Grayscale` by clamping `brightness` to [0; 23].
+    #[must_use]
     pub fn new(brightness: u8) -> Grayscale {
         Grayscale {
             brightness: brightness.clamp(0, 23),
@@ -23,6 +24,7 @@ impl Grayscale {
     }
 
     /// Returns `None` if the `brightness` isn't in [0; 23].
+    #[must_use]
     pub const fn try_new(brightness: u8) -> Option<Grayscale> {
         if brightness <= 23 {
             Some(Grayscale { brightness })
@@ -32,6 +34,7 @@ impl Grayscale {
     }
 
     /// Gets the brightness on the interval [0; 23].
+    #[must_use]
     pub const fn brightness(&self) -> u8 {
         self.brightness
     }

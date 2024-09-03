@@ -18,15 +18,21 @@ use itertools::iproduct;
 
 // TODO: compact colors
 pub trait Color: Copy + Debug + Default + PartialEq + Sequence {
+    #[must_use]
     fn to_rgb(&self) -> Rgb<f64>;
     /// Approximate `color` using `Self`.
+    #[must_use]
     fn from_rgb(color: Rgb<u8>) -> Self {
         default_from_rgb(color)
     }
 
     /// Writes the ansi `SGR` parameters to color the background.
+    /// # Errors
+    /// If writing fails.
     fn write_background(&self, to: impl Write) -> std::io::Result<()>;
     /// Writes the ansi `SGR` parameters to color the character.
+    /// # Errors
+    //  If writing fails.
     fn write_foreground(&self, to: impl Write) -> std::io::Result<()>;
 
     // TODO: take alpha channel into consideration
@@ -34,6 +40,7 @@ pub trait Color: Copy + Debug + Default + PartialEq + Sequence {
     /// Creates a new `AsciiCell` with `Self` as the color type.
     /// `color` represents the color to approximate.
     /// `max_coverage` is how much coverage the last character in `gradient` provides.
+    #[must_use]
     fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, font: &Font<G>) -> AsciiCell<Self> {
         let target = float(color);
 
@@ -61,7 +68,7 @@ pub trait Color: Copy + Debug + Default + PartialEq + Sequence {
             .sort_by(|(_, _, distance0, _), (_, _, distance1, _)| distance0.total_cmp(distance1));
 
         if options.is_empty() {
-            return Default::default();
+            return AsciiCell::default();
         }
 
         let (_, _, closest, _) = options[0];

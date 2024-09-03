@@ -13,6 +13,8 @@ pub struct Font<G> {
 
 impl<G: AsRef<[char]>> Font<G> {
     /// Tries to construct a new `Font` object.
+    ///
+    /// # Errors
     /// If the gradient is empty
     /// `max_coverage` is not on the interval [0; 1],
     /// or `aspect_ratio` is <= 0
