@@ -7,32 +7,44 @@ pub struct Font<G> {
     /// 0 represents no coverage (a non-rendered character like space).
     /// 1 represents full coverage.
     max_coverage: f64,
+    /// The font width divided by the font height.
+    aspect_ratio: f64,
 }
 
 impl<G: AsRef<[char]>> Font<G> {
     /// Tries to construct a new `Font` object.
     /// If the gradient is empty
-    /// or `max_coverage` is not on the interval [0; 1],
+    /// `max_coverage` is not on the interval [0; 1],
+    /// or `aspect_ratio` is <= 0
     /// `Err(gradient)` is returned.
-    pub fn new(gradient: G, max_coverage: f64) -> Result<Font<G>, G> {
-        if !(0.0 < max_coverage && max_coverage <= 1.0) || gradient.as_ref().is_empty() {
+    pub fn new(gradient: G, max_coverage: f64, aspect_ratio: f64) -> Result<Font<G>, G> {
+        if gradient.as_ref().is_empty()
+            || !(0.0 < max_coverage && max_coverage <= 1.0)
+            || aspect_ratio <= 0.0
+        {
             return Err(gradient);
         }
 
         Ok(Font {
             gradient,
             max_coverage,
+            aspect_ratio,
         })
     }
 
-    /// See field documentation
+    /// See field documentation.
     pub fn gradient(&self) -> &[char] {
         self.gradient.as_ref()
     }
 
-    /// See field documentation
+    /// See field documentation.
     pub fn max_coverage(&self) -> f64 {
         self.max_coverage
+    }
+
+    /// See field documentation.
+    pub fn aspect_ratio(&self) -> f64 {
+        self.aspect_ratio
     }
 
     /// Gets the coverage of the char at the specified index.

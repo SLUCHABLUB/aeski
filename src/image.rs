@@ -5,6 +5,7 @@ use crate::sgr::SelectGraphicRendition;
 use image::imageops::Nearest;
 use image::{DynamicImage, GenericImageView, Pixel};
 use itertools::iproduct;
+use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
@@ -59,12 +60,49 @@ impl<C> AsciiImage<C> {
 }
 
 impl<C: Color> AsciiImage<C> {
-    // TODO: optimize
-    pub fn from_image<G: AsRef<[char]>>(
-        image: DynamicImage,
+    /// Converts the image to ascii using the image's dimensions.
+    /// However, the aspect ratio is kept by scaling one of the
+    /// dimensions down using the font's aspect ratio.
+    pub fn from_image<G: AsRef<[char]>>(image: &DynamicImage, font: &Font<G>) -> Self {
+        let width = image.width() as usize;
+        let height = image.height() as usize;
+
+        match font.aspect_ratio().total_cmp(&1.0) {
+            // font height > font width => downsample height
+            Ordering::Less => Self::from_image_with_width(image, font, width),
+            // font height = font width => don't downsample
+            Ordering::Equal => Self::from_image_with_dimensions(image, font, width, height),
+            // font height < font width => downsample width
+            Ordering::Greater => Self::from_image_with_height(image, font, height),
+        }
+    }
+
+    pub fn from_image_with_width<G: AsRef<[char]>>(
+        image: &DynamicImage,
+        font: &Font<G>,
+        width: usize,
+    ) -> Self {
+        let scaling_factor = width as f64 / image.width() as f64;
+        let height =
+            (scaling_factor * image.height() as f64 * font.aspect_ratio()).round() as usize;
+        Self::from_image_with_dimensions(image, font, width, height)
+    }
+
+    pub fn from_image_with_height<G: AsRef<[char]>>(
+        image: &DynamicImage,
+        font: &Font<G>,
+        height: usize,
+    ) -> Self {
+        let scaling_factor = height as f64 / image.height() as f64;
+        let width = (scaling_factor * image.width() as f64 / font.aspect_ratio()).round() as usize;
+        Self::from_image_with_dimensions(image, font, width, height)
+    }
+
+    pub fn from_image_with_dimensions<G: AsRef<[char]>>(
+        image: &DynamicImage,
+        font: &Font<G>,
         width: usize,
         height: usize,
-        font: &Font<G>,
     ) -> Self {
         let image = image.resize_exact(width as _, height as _, Nearest);
 
