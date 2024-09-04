@@ -13,7 +13,6 @@ use std::io::Write;
 use crate::color::util::{interpolate, square_distance};
 use crate::font::Font;
 
-// TODO: move Send bound
 // TODO: compact colors
 pub trait Color: Copy {
     #[must_use]

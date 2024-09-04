@@ -2,7 +2,6 @@ use num_rational::Ratio;
 use num_traits::float::FloatCore;
 use num_traits::{NumCast, One, Zero};
 
-// TODO: add aspect ratio
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Font<G> {
     /// A gradient of characters from least to most coverage.
