@@ -4,27 +4,23 @@ pub mod ansi_4_bit;
 pub mod ansi_8_bit;
 pub mod colorless;
 mod util;
+mod variants;
 
 use crate::cell::{AsciiCell, Foreground};
-use enum_iterator::all;
 use image::Rgb;
-use std::fmt::Debug;
 use std::io::Write;
 
-use crate::color::util::{float, interpolate, square_distance};
+use crate::color::util::{interpolate, square_distance};
 use crate::font::Font;
-pub use enum_iterator::Sequence;
-use itertools::iproduct;
 
+// TODO: move Send bound
 // TODO: compact colors
-pub trait Color: Copy + Debug + Default + PartialEq + Sequence {
+pub trait Color: Copy {
     #[must_use]
-    fn to_rgb(&self) -> Rgb<f64>;
+    fn to_rgb(&self) -> Rgb<u8>;
     /// Approximate `color` using `Self`.
     #[must_use]
-    fn from_rgb(color: Rgb<u8>) -> Self {
-        default_from_rgb(color)
-    }
+    fn from_rgb(color: Rgb<u8>) -> Self;
 
     /// Writes the ansi `SGR` parameters to color the background.
     /// # Errors
@@ -41,59 +37,68 @@ pub trait Color: Copy + Debug + Default + PartialEq + Sequence {
     /// `color` represents the color to approximate.
     /// `max_coverage` is how much coverage the last character in `gradient` provides.
     #[must_use]
-    fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, font: &Font<G>) -> AsciiCell<Self> {
-        let target = float(color);
+    fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, font: &Font<G>) -> AsciiCell<Self>
+    where
+        Self: Sized;
+}
 
-        // Go through all possible color-color-character combinations and find the closest
-        let mut options: Vec<_> = iproduct!(all::<Self>(), all::<Self>())
-            .flat_map(|(from, to)| {
-                let from_rgb = from.to_rgb();
-                let to_rgb = to.to_rgb();
+pub(super) fn default_new_cell<C: Color + Default, G: AsRef<[char]>>(
+    colors: &[C],
+    color: Rgb<u8>,
+    font: &Font<G>,
+) -> AsciiCell<C> {
+    let mut closest = u32::MAX;
+    let mut background = C::default();
+    let mut foreground = C::default();
+    let mut character = ' ';
 
-                font.gradient()
-                    .iter()
-                    .enumerate()
-                    .map(move |(index, char)| {
-                        let interpolation_parameter = font.coverage(index);
+    // Cache coverages
+    let mut coverages = Vec::with_capacity(font.gradient().len());
+    for i in 0..font.gradient().len() {
+        coverages.push(font.coverage(i))
+    }
+    // Using a slice improves performance
+    let coverages = coverages.as_slice();
 
-                        let interpolation = interpolate(from_rgb, to_rgb, interpolation_parameter);
+    // Go through all possible color-color-character combinations and find the closest
+    for from in colors {
+        let from_rgb = from.to_rgb();
 
-                        let distance = square_distance(target, interpolation);
+        for to in colors {
+            let to_rgb = to.to_rgb();
 
-                        (from, to, distance, *char)
-                    })
-            })
-            .collect();
-        options
-            .sort_by(|(_, _, distance0, _), (_, _, distance1, _)| distance0.total_cmp(distance1));
+            for (index, char) in font.gradient().iter().enumerate() {
+                let interpolation_parameter = coverages[index];
 
-        if options.is_empty() {
-            return AsciiCell::default();
+                let interpolation = interpolate(from_rgb, to_rgb, interpolation_parameter);
+
+                let distance = square_distance(color, interpolation);
+
+                if distance < closest {
+                    closest = distance;
+                    background = *from;
+                    foreground = *to;
+                    character = *char;
+                }
+            }
         }
+    }
 
-        let (_, _, closest, _) = options[0];
-        let options: Vec<_> = options
-            .into_iter()
-            .take_while(|(_, _, distance, _)| *distance == closest)
-            .collect();
+    let foreground = (character != ' ').then_some(Foreground {
+        color: foreground,
+        character,
+    });
 
-        // TODO: make a better choice from `options` (random?)
-        let (background, color, _, character) = options[0];
-
-        AsciiCell {
-            background,
-            foreground: Some(Foreground { color, character }),
-        }
+    AsciiCell {
+        background,
+        foreground,
     }
 }
 
-pub(super) fn default_from_rgb<C: Color>(color: Rgb<u8>) -> C {
-    all::<C>()
-        .min_by(|self0, self1| {
-            let color_f64 = float(color);
-            let dist0 = square_distance(self0.to_rgb(), color_f64);
-            let dist1 = square_distance(self1.to_rgb(), color_f64);
-            dist0.total_cmp(&dist1)
-        })
+pub(super) fn default_from_rgb<C: Color + Default>(colors: &[C], color: Rgb<u8>) -> C {
+    colors
+        .iter()
+        .copied()
+        .min_by_key(|c| square_distance(c.to_rgb(), color))
         .unwrap_or_default()
 }

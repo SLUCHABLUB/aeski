@@ -4,7 +4,10 @@ use crate::font::Font;
 use crate::sgr::SelectGraphicRendition;
 use image::imageops::Nearest;
 use image::{DynamicImage, GenericImageView, Pixel};
-use itertools::iproduct;
+use num_rational::Ratio;
+use rayon::iter::IndexedParallelIterator;
+use rayon::iter::IntoParallelIterator;
+use rayon::iter::ParallelIterator;
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 
@@ -68,15 +71,19 @@ impl<C> AsciiImage<C> {
     }
 }
 
-impl<C: Color> AsciiImage<C> {
+// TODO: serial versions for non Send colors
+impl<C: Color + Send> AsciiImage<C> {
     /// Converts the image to ascii using the image's dimensions.
     /// However, the aspect ratio is kept by scaling one of the
     /// dimensions down using the font's aspect ratio.
-    pub fn from_image<G: AsRef<[char]>>(image: &DynamicImage, font: &Font<G>) -> Self {
+    pub fn from_image<G: AsRef<[char]> + Send + Sync>(
+        image: &DynamicImage,
+        font: &Font<G>,
+    ) -> Self {
         let width = image.width() as usize;
         let height = image.height() as usize;
 
-        match font.aspect_ratio().total_cmp(&1.0) {
+        match font.aspect_ratio().cmp(&Ratio::from(1)) {
             // font height > font width => downsample height
             Ordering::Less => Self::from_image_with_width(image, font, width),
             // font height = font width => don't downsample
@@ -86,46 +93,55 @@ impl<C: Color> AsciiImage<C> {
         }
     }
 
-    pub fn from_image_with_width<G: AsRef<[char]>>(
+    pub fn from_image_with_width<G: AsRef<[char]> + Send + Sync>(
         image: &DynamicImage,
         font: &Font<G>,
         width: usize,
     ) -> Self {
-        let scaling_factor = width as f64 / image.width() as f64;
-        let height =
-            (scaling_factor * image.height() as f64 * font.aspect_ratio()).round() as usize;
+        let scaling_factor = Ratio::new(width, image.width() as usize);
+        let height = (scaling_factor * image.height() as usize * font.aspect_ratio())
+            .round()
+            .to_integer();
         Self::from_image_with_dimensions(image, font, width, height)
     }
 
-    pub fn from_image_with_height<G: AsRef<[char]>>(
+    pub fn from_image_with_height<G: AsRef<[char]> + Send + Sync>(
         image: &DynamicImage,
         font: &Font<G>,
         height: usize,
     ) -> Self {
-        let scaling_factor = height as f64 / image.height() as f64;
-        let width = (scaling_factor * image.width() as f64 / font.aspect_ratio()).round() as usize;
+        let scaling_factor = Ratio::new(height, image.height() as usize);
+        let width = (scaling_factor * image.width() as usize / font.aspect_ratio())
+            .round()
+            .to_integer();
         Self::from_image_with_dimensions(image, font, width, height)
     }
 
-    pub fn from_image_with_dimensions<G: AsRef<[char]>>(
+    pub fn from_image_with_dimensions<G: AsRef<[char]> + Send + Sync>(
         image: &DynamicImage,
         font: &Font<G>,
         width: usize,
         height: usize,
     ) -> Self {
         let image = image.resize_exact(width as _, height as _, Nearest);
+        let mut cells = Vec::with_capacity(width * height);
 
-        let cells = iproduct!(0..height, 0..width)
-            .map(|(y, x)| {
+        (0..(width * height))
+            .into_par_iter()
+            .map(|index| {
+                let x = index % width;
+                let y = index / width;
                 let pixel = image.get_pixel(x as u32, y as u32).to_rgb();
 
                 C::new_cell(pixel, font)
             })
-            .collect();
+            .collect_into_vec(&mut cells);
 
         AsciiImage { width, cells }
     }
+}
 
+impl<C: Color + PartialEq> AsciiImage<C> {
     // TODO: use `Formatter` and make pub
     pub(crate) fn fmt_line(&self, f: &mut String, y: usize) -> std::fmt::Result {
         if self.height() <= y {
@@ -180,7 +196,7 @@ impl<C> Default for AsciiImage<C> {
     }
 }
 
-impl<C: Color> Display for AsciiImage<C> {
+impl<C: Color + PartialEq> Display for AsciiImage<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.lines().join("\n"))
     }

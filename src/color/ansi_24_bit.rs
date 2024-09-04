@@ -1,6 +1,5 @@
 use crate::cell::AsciiCell;
-use crate::color::util::float;
-use crate::color::{Color, Sequence};
+use crate::color::Color;
 use crate::font::Font;
 use image::Rgb;
 use std::io::Write;
@@ -9,7 +8,7 @@ const BACKGROUND: u8 = 48;
 const FOREGROUND: u8 = 38;
 const SECOND_ARGUMENT: u8 = 2;
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default, Sequence)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct Ansi24Bit {
     r: u8,
     g: u8,
@@ -36,8 +35,8 @@ impl From<Ansi24Bit> for Rgb<u8> {
 }
 
 impl Color for Ansi24Bit {
-    fn to_rgb(&self) -> Rgb<f64> {
-        float(Rgb::from(*self))
+    fn to_rgb(&self) -> Rgb<u8> {
+        Rgb::from(*self)
     }
     fn from_rgb(color: Rgb<u8>) -> Self {
         color.into()

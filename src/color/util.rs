@@ -1,43 +1,29 @@
 use image::Rgb;
+use num_rational::Ratio;
 
-pub(crate) fn map<T: Copy, R>(color: Rgb<T>, mut f: impl FnMut(T) -> R) -> Rgb<R> {
-    Rgb([f(red(color)), f(green(color)), f(blue(color))])
+#[inline]
+pub fn map2<A: Copy, B: Copy, R>(a: Rgb<A>, b: Rgb<B>, mut f: impl FnMut(A, B) -> R) -> Rgb<R> {
+    Rgb([f(a.0[0], b.0[0]), f(a.0[1], b.0[1]), f(a.0[2], b.0[2])])
 }
 
-pub(crate) fn map2<A: Copy, B: Copy, R>(
-    a: Rgb<A>,
-    b: Rgb<B>,
-    mut f: impl FnMut(A, B) -> R,
-) -> Rgb<R> {
-    Rgb([
-        f(red(a), red(b)),
-        f(green(a), green(b)),
-        f(blue(a), blue(b)),
-    ])
+#[inline]
+pub(crate) fn interpolate(from: Rgb<u8>, to: Rgb<u8>, t: Ratio<usize>) -> Rgb<u8> {
+    map2(from, to, |from, to| {
+        let from = Ratio::from(from as usize);
+        let to = Ratio::from(to as usize);
+        (from + t * to - t * from)
+            .round()
+            .to_integer()
+            .try_into()
+            .unwrap_or(u8::MAX)
+    })
 }
 
-pub(crate) fn float(color: Rgb<u8>) -> Rgb<f64> {
-    map(color, |chanel| chanel as f64 / 255.0)
-}
+#[inline]
+pub(crate) fn square_distance(a: Rgb<u8>, b: Rgb<u8>) -> u32 {
+    let r = u8::abs_diff(a.0[0], b.0[0]) as u32;
+    let g = u8::abs_diff(a.0[1], b.0[1]) as u32;
+    let b = u8::abs_diff(a.0[2], b.0[2]) as u32;
 
-pub(crate) fn red<T: Copy>(color: Rgb<T>) -> T {
-    color.0[0]
-}
-
-pub(crate) fn green<T: Copy>(color: Rgb<T>) -> T {
-    color.0[1]
-}
-
-pub(crate) fn blue<T: Copy>(color: Rgb<T>) -> T {
-    color.0[2]
-}
-
-pub(crate) fn interpolate(from: Rgb<f64>, to: Rgb<f64>, t: f64) -> Rgb<f64> {
-    map2(from, to, |from, to| from + t * (to - from))
-}
-
-pub(crate) fn square_distance(a: Rgb<f64>, b: Rgb<f64>) -> f64 {
-    let square = map2(a, b, |a, b| (a - b) * (a - b));
-
-    red(square) + green(square) + blue(square)
+    r * r + g * g + b * b
 }

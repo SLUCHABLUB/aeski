@@ -1,7 +1,9 @@
+use crate::cell::AsciiCell;
 use crate::color::ansi_4_bit::Ansi4Bit;
-use crate::color::{default_from_rgb, Color};
+use crate::color::variants::ANSI_8_BIT;
+use crate::color::{default_from_rgb, default_new_cell, Color};
+use crate::font::Font;
 use cube::Cube;
-use enum_iterator::Sequence;
 use grayscale::Grayscale;
 use image::{Luma, Pixel, Rgb};
 use std::io::Write;
@@ -18,7 +20,7 @@ const SECOND_ARGUMENT: u8 = 5;
 /// Can either be a 4-bit ansi color,
 /// a 6×6×6 cube color,
 /// or a grayscale value on the interval [0; 23].
-#[derive(Copy, Clone, Eq, Debug, Sequence)]
+#[derive(Copy, Clone, Eq, Debug)]
 pub enum Ansi8Bit {
     Ansi4Bit(Ansi4Bit),
     Cube(Cube),
@@ -39,7 +41,7 @@ impl PartialEq for Ansi8Bit {
 }
 
 impl Color for Ansi8Bit {
-    fn to_rgb(&self) -> Rgb<f64> {
+    fn to_rgb(&self) -> Rgb<u8> {
         match self {
             Ansi8Bit::Ansi4Bit(color) => color.to_rgb(),
             Ansi8Bit::Cube(color) => color.to_rgb(),
@@ -57,7 +59,7 @@ impl Color for Ansi8Bit {
             return Ansi8Bit::Grayscale(Grayscale::new(grayscale));
         }
 
-        default_from_rgb(color)
+        default_from_rgb(&ANSI_8_BIT, color)
     }
 
     fn write_background(&self, to: impl Write) -> std::io::Result<()> {
@@ -74,5 +76,9 @@ impl Color for Ansi8Bit {
             Ansi8Bit::Cube(color) => color.write_foreground(to),
             Ansi8Bit::Grayscale(color) => color.write_foreground(to),
         }
+    }
+
+    fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, font: &Font<G>) -> AsciiCell<Self> {
+        default_new_cell(&ANSI_8_BIT, color, font)
     }
 }

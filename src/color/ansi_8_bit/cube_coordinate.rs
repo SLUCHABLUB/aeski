@@ -1,4 +1,3 @@
-use enum_iterator::Sequence;
 use std::fmt::{Debug, Display, Formatter};
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
@@ -11,10 +10,12 @@ pub struct CubeCoordinate {
 impl CubeCoordinate {
     /// Clamps the argument.
     #[must_use]
-    pub fn new(value: u8) -> CubeCoordinate {
-        CubeCoordinate {
-            coordinate: value.clamp(0, 5),
+    pub const fn new(mut coordinate: u8) -> CubeCoordinate {
+        if 5 < coordinate {
+            coordinate = 5;
         }
+
+        CubeCoordinate { coordinate }
     }
 
     /// Returns `None` if the argument is too large.
@@ -43,25 +44,5 @@ impl Debug for CubeCoordinate {
 impl Display for CubeCoordinate {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.coordinate)
-    }
-}
-
-impl Sequence for CubeCoordinate {
-    const CARDINALITY: usize = 6;
-
-    fn next(&self) -> Option<Self> {
-        Self::try_new(self.coordinate + 1)
-    }
-
-    fn previous(&self) -> Option<Self> {
-        Self::try_new(self.coordinate.checked_sub(1)?)
-    }
-
-    fn first() -> Option<Self> {
-        Some(Self::new(0))
-    }
-
-    fn last() -> Option<Self> {
-        Some(Self::new(5))
     }
 }

@@ -19,13 +19,12 @@ fn input(prompt: &str) -> std::io::Result<String> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let image_path = input("Path to image: ")?;
-    let width = input("Width in characters: ")?.trim().parse()?;
+    let font = Font::new_float(GRADIENT, COVERAGE, ASPECT_RATIO).unwrap();
 
+    let image_path = input("Path to image: ")?;
     let image = ImageReader::open(image_path.trim())?.decode()?;
 
-    let font = Font::new(GRADIENT, COVERAGE, ASPECT_RATIO).unwrap();
-
+    let width = input("Width in characters: ")?.trim().parse()?;
     let ascii_image = AsciiImage::<Ansi4Bit>::from_image_with_width(&image, &font, width);
 
     println!("{ascii_image}");
