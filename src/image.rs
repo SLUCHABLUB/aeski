@@ -71,7 +71,7 @@ impl<C> AsciiImage<C> {
     }
 }
 
-// TODO: serial versions for non Send colors
+// TODO: Add serial versions for non Send colors.
 impl<C: Color + Send> AsciiImage<C> {
     /// Converts the image to ascii using the image's dimensions.
     /// However, the aspect ratio is kept by scaling one of the
@@ -142,7 +142,7 @@ impl<C: Color + Send> AsciiImage<C> {
 }
 
 impl<C: Color + PartialEq> AsciiImage<C> {
-    // TODO: use `Formatter` and make pub
+    // TODO: Use `Formatter` and make public.
     pub(crate) fn fmt_line(&self, f: &mut String, y: usize) -> std::fmt::Result {
         if self.height() <= y {
             return Ok(());

@@ -6,7 +6,7 @@ const SELECT_GRAPHIC_RENDITION: char = 'm';
 
 pub(crate) struct SelectGraphicRendition<'f> {
     started: bool,
-    // TODO: use `Formatter`
+    // TODO: Use `Formatter`.
     f: &'f mut String,
 }
 

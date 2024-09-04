@@ -13,7 +13,7 @@ use std::io::Write;
 use crate::color::util::{interpolate, square_distance};
 use crate::font::Font;
 
-// TODO: compact colors
+// TODO: Add compact colors.
 pub trait Color: Copy {
     #[must_use]
     fn to_rgb(&self) -> Rgb<u8>;
@@ -30,8 +30,8 @@ pub trait Color: Copy {
     //  If writing fails.
     fn write_foreground(&self, to: impl Write) -> std::io::Result<()>;
 
-    // TODO: take alpha channel into consideration
-    // TODO: replace `color: Rgb<u8>` with `pixels: SubImage`
+    // TODO: Take alpha channel into consideration.
+    // TODO: Replace `color: Rgb<u8>` with `pixels: SubImage`.
     /// Creates a new `AsciiCell` with `Self` as the color type.
     /// `color` represents the color to approximate.
     /// `max_coverage` is how much coverage the last character in `gradient` provides.

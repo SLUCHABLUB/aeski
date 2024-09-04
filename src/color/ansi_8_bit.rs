@@ -35,7 +35,7 @@ impl Default for Ansi8Bit {
 
 impl PartialEq for Ansi8Bit {
     fn eq(&self, other: &Self) -> bool {
-        // TODO: avoid conversion here
+        // TODO: Avoid conversion here.
         self.to_rgb() == other.to_rgb()
     }
 }
