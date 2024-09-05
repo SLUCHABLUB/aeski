@@ -2,8 +2,7 @@ use crate::cell::AsciiCell;
 use crate::color::Color;
 use crate::font::Font;
 use crate::sgr::SelectGraphicRendition;
-use image::imageops::Nearest;
-use image::{DynamicImage, GenericImageView, Pixel};
+use image::{DynamicImage, GenericImageView};
 use num_rational::Ratio;
 use rayon::iter::IndexedParallelIterator;
 use rayon::iter::IntoParallelIterator;
@@ -80,26 +79,23 @@ impl<C: Color + Send> AsciiImage<C> {
         image: &DynamicImage,
         font: &Font<G>,
     ) -> Self {
-        let width = image.width() as usize;
-        let height = image.height() as usize;
-
         match font.aspect_ratio().cmp(&Ratio::from(1)) {
             // font height > font width => downsample height
-            Ordering::Less => Self::from_image_with_width(image, font, width),
+            Ordering::Less => Self::from_image_with_width(image, font, image.width()),
             // font height = font width => don't downsample
-            Ordering::Equal => Self::from_image_with_dimensions(image, font, width, height),
+            Ordering::Equal => Self::from_image_with_dimensions(image, font, image.width(), image.height()),
             // font height < font width => downsample width
-            Ordering::Greater => Self::from_image_with_height(image, font, height),
+            Ordering::Greater => Self::from_image_with_height(image, font, image.height()),
         }
     }
 
     pub fn from_image_with_width<G: AsRef<[char]> + Send + Sync>(
         image: &DynamicImage,
         font: &Font<G>,
-        width: usize,
+        width: u32,
     ) -> Self {
-        let scaling_factor = Ratio::new(width, image.width() as usize);
-        let height = (scaling_factor * image.height() as usize * font.aspect_ratio())
+        let scaling_factor = Ratio::new(width, image.width());
+        let height = (scaling_factor * image.height() * font.aspect_ratio())
             .round()
             .to_integer();
         Self::from_image_with_dimensions(image, font, width, height)
@@ -108,10 +104,10 @@ impl<C: Color + Send> AsciiImage<C> {
     pub fn from_image_with_height<G: AsRef<[char]> + Send + Sync>(
         image: &DynamicImage,
         font: &Font<G>,
-        height: usize,
+        height: u32,
     ) -> Self {
-        let scaling_factor = Ratio::new(height, image.height() as usize);
-        let width = (scaling_factor * image.width() as usize / font.aspect_ratio())
+        let scaling_factor = Ratio::new(height, image.height());
+        let width = (scaling_factor * image.width() / font.aspect_ratio())
             .round()
             .to_integer();
         Self::from_image_with_dimensions(image, font, width, height)
@@ -120,23 +116,36 @@ impl<C: Color + Send> AsciiImage<C> {
     pub fn from_image_with_dimensions<G: AsRef<[char]> + Send + Sync>(
         image: &DynamicImage,
         font: &Font<G>,
-        width: usize,
-        height: usize,
+        width: u32,
+        height: u32,
     ) -> Self {
-        let image = image.resize_exact(width as _, height as _, Nearest);
-        let mut cells = Vec::with_capacity(width * height);
+        let area = width * height;
 
-        (0..(width * height))
+        if area == 0 {
+            return AsciiImage::new()
+        }
+
+        let mut cells = Vec::with_capacity(area as usize);
+
+        (0..area)
             .into_par_iter()
             .map(|index| {
-                let x = index % width;
-                let y = index / width;
-                let pixel = image.get_pixel(x as u32, y as u32).to_rgb();
+                let char_x = index % width;
+                let char_y = index / width;
 
-                C::new_cell(pixel, font)
+                let x = char_x * image.width() / width;
+                let y = char_y * image.height() / height;
+
+                let width = (char_x + 1) * image.width() / width - x;
+                let height = (char_y + 1) * image.height() / height - y;
+
+                let view = image.view(x, y, width.max(1), height.max(1));
+
+                C::new_cell(view, font)
             })
             .collect_into_vec(&mut cells);
 
+        let width = width as usize;
         AsciiImage { width, cells }
     }
 }

@@ -1,8 +1,9 @@
 use crate::cell::AsciiCell;
 use crate::color::Color;
 use crate::font::Font;
-use image::Rgb;
+use image::{DynamicImage, Pixel, Rgb, SubImage};
 use std::io::Write;
+use crate::color::util::average_color;
 
 const BACKGROUND: u8 = 48;
 const FOREGROUND: u8 = 38;
@@ -50,7 +51,9 @@ impl Color for Ansi24Bit {
         to.write_all(&[FOREGROUND, SECOND_ARGUMENT, self.r, self.g, self.b])
     }
 
-    fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, _font: &Font<G>) -> AsciiCell<Self> {
+    // TODO: Base the character on the alpha.
+    fn new_cell<G: AsRef<[char]>>(view: SubImage<&DynamicImage>, _font: &Font<G>) -> AsciiCell<Self> {
+        let color = average_color(*view).to_rgb();
         AsciiCell {
             background: color.into(),
             foreground: None,

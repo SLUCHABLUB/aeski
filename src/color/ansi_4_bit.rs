@@ -3,8 +3,9 @@ use crate::color::ansi_3_bit::{Ansi3Bit, BACKGROUND, FOREGROUND};
 use crate::color::variants::ANSI_4_BIT;
 use crate::color::{default_from_rgb, default_new_cell, Color};
 use crate::font::Font;
-use image::{Pixel, Rgb};
+use image::{DynamicImage, Pixel, Rgb, SubImage};
 use std::io::Write;
+use crate::color::util::average_color;
 
 const BRIGHT_OFFSET: u8 = 60;
 
@@ -68,7 +69,7 @@ impl Color for Ansi4Bit {
         to.write_all(&[self.color as u8 + FOREGROUND + u8::from(self.is_bright) * BRIGHT_OFFSET])
     }
 
-    fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, font: &Font<G>) -> AsciiCell<Self> {
-        default_new_cell(&ANSI_4_BIT, color, font)
+    fn new_cell<G: AsRef<[char]>>(view: SubImage<&DynamicImage>, font: &Font<G>) -> AsciiCell<Self> {
+        default_new_cell(&ANSI_4_BIT, average_color(*view).to_rgb(), font)
     }
 }

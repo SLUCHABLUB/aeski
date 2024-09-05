@@ -1,9 +1,10 @@
 use crate::cell::{AsciiCell, Foreground};
 use crate::color::Color;
 use crate::font::Font;
-use image::{Luma, Pixel, Rgb};
+use image::{DynamicImage, Luma, Pixel, Rgb, SubImage};
 use num_rational::Ratio;
 use std::io::Write;
+use crate::color::util::average_color;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct Colorless;
@@ -25,8 +26,8 @@ impl Color for Colorless {
         Ok(())
     }
 
-    fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, font: &Font<G>) -> AsciiCell<Self> {
-        let Luma([luma]) = color.to_luma();
+    fn new_cell<G: AsRef<[char]>>(view: SubImage<&DynamicImage>, font: &Font<G>) -> AsciiCell<Self> {
+        let Luma([luma]) = average_color(*view).to_luma();
         let luma = Ratio::new(luma as usize, u8::MAX as usize);
 
         let index = (luma * (font.gradient().len() - 1)).round().to_integer();

@@ -3,9 +3,10 @@ use crate::color::ansi_8_bit::{BACKGROUND, FOREGROUND, SECOND_ARGUMENT};
 use crate::color::variants::GRAYSCALE;
 use crate::color::{default_new_cell, Color};
 use crate::font::Font;
-use image::{Luma, Pixel, Rgb};
+use image::{DynamicImage, Luma, Pixel, Rgb, SubImage};
 use num_rational::Ratio;
 use std::io::Write;
+use crate::color::util::average_color;
 
 const OFFSET: u8 = 232;
 
@@ -73,7 +74,7 @@ impl Color for Grayscale {
         to.write_all(&[FOREGROUND, SECOND_ARGUMENT, OFFSET + self.brightness])
     }
 
-    fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, font: &Font<G>) -> AsciiCell<Self> {
-        default_new_cell(&GRAYSCALE, color, font)
+    fn new_cell<G: AsRef<[char]>>(view: SubImage<&DynamicImage>, font: &Font<G>) -> AsciiCell<Self> {
+        default_new_cell(&GRAYSCALE, average_color(*view).to_rgb(), font)
     }
 }

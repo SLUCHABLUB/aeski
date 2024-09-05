@@ -2,8 +2,9 @@ use crate::cell::AsciiCell;
 use crate::color::variants::ANSI_3_BIT;
 use crate::color::{default_from_rgb, default_new_cell, Color};
 use crate::font::Font;
-use image::Rgb;
+use image::{DynamicImage, Pixel, Rgb, SubImage};
 use std::io::Write;
+use crate::color::util::average_color;
 
 pub(super) const BACKGROUND: u8 = 40;
 pub(super) const FOREGROUND: u8 = 30;
@@ -49,7 +50,7 @@ impl Color for Ansi3Bit {
         to.write_all(&[FOREGROUND + *self as u8])
     }
 
-    fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, font: &Font<G>) -> AsciiCell<Self> {
-        default_new_cell(&ANSI_3_BIT, color, font)
+    fn new_cell<G: AsRef<[char]>>(view: SubImage<&DynamicImage>, font: &Font<G>) -> AsciiCell<Self> {
+        default_new_cell(&ANSI_3_BIT, average_color(*view).to_rgb(), font)
     }
 }

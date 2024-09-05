@@ -5,8 +5,9 @@ use crate::color::{default_from_rgb, default_new_cell, Color};
 use crate::font::Font;
 use cube::Cube;
 use grayscale::Grayscale;
-use image::{Luma, Pixel, Rgb};
+use image::{DynamicImage, Luma, Pixel, Rgb, SubImage};
 use std::io::Write;
+use crate::color::util::average_color;
 
 pub mod cube;
 pub mod cube_coordinate;
@@ -78,7 +79,7 @@ impl Color for Ansi8Bit {
         }
     }
 
-    fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, font: &Font<G>) -> AsciiCell<Self> {
-        default_new_cell(&ANSI_8_BIT, color, font)
+    fn new_cell<G: AsRef<[char]>>(view: SubImage<&DynamicImage>, font: &Font<G>) -> AsciiCell<Self> {
+        default_new_cell(&ANSI_8_BIT, average_color(*view).to_rgb(), font)
     }
 }

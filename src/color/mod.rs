@@ -7,7 +7,7 @@ mod util;
 mod variants;
 
 use crate::cell::{AsciiCell, Foreground};
-use image::Rgb;
+use image::{DynamicImage, Rgb, SubImage};
 use std::io::Write;
 
 use crate::color::util::{interpolate, square_distance};
@@ -36,7 +36,7 @@ pub trait Color: Copy {
     /// `color` represents the color to approximate.
     /// `max_coverage` is how much coverage the last character in `gradient` provides.
     #[must_use]
-    fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, font: &Font<G>) -> AsciiCell<Self>
+    fn new_cell<G: AsRef<[char]>>(view: SubImage<&DynamicImage>, font: &Font<G>) -> AsciiCell<Self>
     where
         Self: Sized;
 }

@@ -4,9 +4,10 @@ use crate::color::ansi_8_bit::{BACKGROUND, FOREGROUND, SECOND_ARGUMENT};
 use crate::color::variants::CUBE;
 use crate::color::{default_from_rgb, default_new_cell, Color};
 use crate::font::Font;
-use image::Rgb;
+use image::{DynamicImage, Pixel, Rgb, SubImage};
 use num_rational::Ratio;
 use std::io::Write;
+use crate::color::util::average_color;
 
 const OFFSET: u8 = 16;
 
@@ -56,7 +57,7 @@ impl Color for Cube {
         ])
     }
 
-    fn new_cell<G: AsRef<[char]>>(color: Rgb<u8>, font: &Font<G>) -> AsciiCell<Self> {
-        default_new_cell(&CUBE, color, font)
+    fn new_cell<G: AsRef<[char]>>(view: SubImage<&DynamicImage>, font: &Font<G>) -> AsciiCell<Self> {
+        default_new_cell(&CUBE, average_color(*view).to_rgb(), font)
     }
 }

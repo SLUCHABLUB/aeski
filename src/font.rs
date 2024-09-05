@@ -9,9 +9,9 @@ pub struct Font<G> {
     /// A number on the interval (0; 1] which represents the coverage of last char in `gradient`.
     /// 0 represents no coverage (a non-rendered character like space).
     /// 1 represents full coverage.
-    max_coverage: Ratio<usize>,
+    max_coverage: Ratio<u32>,
     /// The font width divided by the font height.
-    aspect_ratio: Ratio<usize>,
+    aspect_ratio: Ratio<u32>,
 }
 
 impl<G: AsRef<[char]>> Font<G> {
@@ -24,8 +24,8 @@ impl<G: AsRef<[char]>> Font<G> {
     /// `Err(gradient)` is returned.
     pub fn new(
         gradient: G,
-        max_coverage: Ratio<usize>,
-        aspect_ratio: Ratio<usize>,
+        max_coverage: Ratio<u32>,
+        aspect_ratio: Ratio<u32>,
     ) -> Result<Font<G>, G> {
         if gradient.as_ref().is_empty() || Ratio::one() < max_coverage || aspect_ratio.is_zero() {
             return Err(gradient);
@@ -59,18 +59,18 @@ impl<G: AsRef<[char]>> Font<G> {
     }
 
     /// See field documentation.
-    pub fn max_coverage(&self) -> Ratio<usize> {
+    pub fn max_coverage(&self) -> Ratio<u32> {
         self.max_coverage
     }
 
     /// See field documentation.
-    pub fn aspect_ratio(&self) -> Ratio<usize> {
+    pub fn aspect_ratio(&self) -> Ratio<u32> {
         self.aspect_ratio
     }
 
     /// Gets the coverage of the char at the specified index.
     /// If the index is out of bounds, the maximum coverage is returned.
-    pub fn coverage(&self, index: usize) -> Ratio<usize> {
+    pub fn coverage(&self, index: usize) -> Ratio<u32> {
         if index >= self.gradient().len() {
             return self.max_coverage;
         }
@@ -80,7 +80,7 @@ impl<G: AsRef<[char]>> Font<G> {
         }
 
         // [0; 1]
-        let t = Ratio::new(index, self.gradient().len() - 1);
+        let t = Ratio::new(index as u32, self.gradient().len() as u32 - 1);
 
         t * self.max_coverage
     }
