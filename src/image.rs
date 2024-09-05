@@ -4,7 +4,6 @@ use crate::font::Font;
 use crate::sgr::SelectGraphicRendition;
 use image::{DynamicImage, GenericImageView};
 use num_rational::Ratio;
-use rayon::iter::IndexedParallelIterator;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
 use std::cmp::Ordering;
@@ -12,7 +11,7 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct AsciiImage<Color> {
-    width: usize,
+    width: u32,
     cells: Vec<AsciiCell<Color>>,
 }
 
@@ -29,15 +28,17 @@ impl<C> AsciiImage<C> {
     /// the cells are collected into a `Vec` and returned.
     pub fn from_cells<Cells>(
         cells: Cells,
-        width: usize,
-        height: usize,
+        width: u32,
+        height: u32,
     ) -> Result<Self, Vec<AsciiCell<C>>>
     where
         Cells: IntoIterator<Item = AsciiCell<C>>,
     {
         let cells: Vec<_> = cells.into_iter().collect();
 
-        if cells.len() == width * height {
+        let area = width as u64 * height as u64;
+
+        if cells.len() as u64 == area {
             Ok(AsciiImage { width, cells })
         } else {
             Err(cells)
@@ -46,14 +47,14 @@ impl<C> AsciiImage<C> {
 
     /// The width of the image in characters
     #[must_use]
-    pub const fn width(&self) -> usize {
+    pub const fn width(&self) -> u32 {
         self.width
     }
 
     /// The height of the image in characters
     #[must_use]
-    pub fn height(&self) -> usize {
-        self.cells.len() / self.width
+    pub fn height(&self) -> u32 {
+        (self.cells.len() as u64 / self.width as u64).try_into().unwrap_or(u32::MAX)
     }
 
     /// All the cells that make up the image.
@@ -79,7 +80,9 @@ impl<C: Color + Send> AsciiImage<C> {
         image: &DynamicImage,
         font: &Font<G>,
     ) -> Self {
-        match font.aspect_ratio().cmp(&Ratio::from(1)) {
+        let (font_width, font_height) = font.aspect_ratio().into_raw();
+
+        match font_width.cmp(&font_height) {
             // font height > font width => downsample height
             Ordering::Less => Self::from_image_with_width(image, font, image.width()),
             // font height = font width => don't downsample
@@ -119,19 +122,17 @@ impl<C: Color + Send> AsciiImage<C> {
         width: u32,
         height: u32,
     ) -> Self {
-        let area = width * height;
+        let area = width as u64 * height as u64;
 
         if area == 0 {
             return AsciiImage::new()
         }
 
-        let mut cells = Vec::with_capacity(area as usize);
-
-        (0..area)
+        let cells = (0..area)
             .into_par_iter()
             .map(|index| {
-                let char_x = index % width;
-                let char_y = index / width;
+                let char_x = (index % width as u64) as u32;
+                let char_y = (index / width as u64) as u32;
 
                 let x = char_x * image.width() / width;
                 let y = char_y * image.height() / height;
@@ -143,22 +144,24 @@ impl<C: Color + Send> AsciiImage<C> {
 
                 C::new_cell(view, font)
             })
-            .collect_into_vec(&mut cells);
+            .collect();
 
-        let width = width as usize;
         AsciiImage { width, cells }
     }
 }
 
 impl<C: Color + PartialEq> AsciiImage<C> {
     // TODO: Use `Formatter` and make public.
-    pub(crate) fn fmt_line(&self, f: &mut String, y: usize) -> std::fmt::Result {
+    pub(crate) fn fmt_line(&self, f: &mut String, y: u32) -> std::fmt::Result {
         if self.height() <= y {
             return Ok(());
         }
 
-        let start = self.width * y;
-        let end = start + self.width;
+        let start = self.width as u64 * y as u64;
+        let end = start + self.width as u64;
+
+        let start = start.try_into().map_err(|_| std::fmt::Error)?;
+        let end = end.try_into().map_err(|_| std::fmt::Error)?;
 
         let mut previous = None;
 
@@ -177,7 +180,7 @@ impl<C: Color + PartialEq> AsciiImage<C> {
     }
 
     #[must_use]
-    pub fn line(&self, y: usize) -> Option<String> {
+    pub fn line(&self, y: u32) -> Option<String> {
         if self.height() <= y {
             return None;
         }

@@ -7,4 +7,3 @@ pub mod image;
 mod sgr;
 #[cfg(test)]
 mod tests;
-mod rounded_div;

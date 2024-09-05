@@ -2,11 +2,11 @@ use crate::cell::AsciiCell;
 use crate::color::ansi_8_bit::cube_coordinate::CubeCoordinate;
 use crate::color::ansi_8_bit::{BACKGROUND, FOREGROUND, SECOND_ARGUMENT};
 use crate::color::variants::CUBE;
-use crate::color::{default_from_rgb, default_new_cell, Color};
+use crate::color::{default_new_cell, Color};
 use crate::font::Font;
 use image::{DynamicImage, Pixel, Rgb, SubImage};
-use num_rational::Ratio;
 use std::io::Write;
+use rounded_div::RoundedDiv;
 use crate::color::util::average_color;
 
 const OFFSET: u8 = 16;
@@ -31,14 +31,18 @@ impl Cube {
 impl Color for Cube {
     fn to_rgb(&self) -> Rgb<u8> {
         Rgb([
-            *Ratio::new(self.r.get(), 5).round().numer(),
-            *Ratio::new(self.g.get(), 5).round().numer(),
-            *Ratio::new(self.b.get(), 5).round().numer(),
+            self.r.get() * 51,
+            self.g.get() * 51,
+            self.b.get() * 51,
         ])
     }
 
     fn from_rgb(color: Rgb<u8>) -> Self {
-        default_from_rgb(&CUBE, color)
+        Cube {
+            r: CubeCoordinate::new(color.0[0].rounded_div(51)),
+            g: CubeCoordinate::new(color.0[1].rounded_div(51)),
+            b: CubeCoordinate::new(color.0[2].rounded_div(51)),
+        }
     }
 
     fn write_background(&self, mut to: impl Write) -> std::io::Result<()> {

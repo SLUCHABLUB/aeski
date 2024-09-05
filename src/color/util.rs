@@ -1,7 +1,7 @@
 use image::{GenericImageView, Pixel, Rgb, Rgba};
 use num_rational::Ratio;
 use num_traits::ToPrimitive;
-use crate::rounded_div::rounded_div;
+use rounded_div::RoundedDiv;
 
 #[inline]
 pub(super) fn map2<A: Copy, B: Copy, R>(a: Rgb<A>, b: Rgb<B>, mut f: impl FnMut(A, B) -> R) -> Rgb<R> {
@@ -16,7 +16,8 @@ pub(super) fn interpolate(from: Rgb<u8>, to: Rgb<u8>, t: Ratio<u32>) -> Rgb<u8> 
         let from = from as u32;
         let to = to as u32;
 
-        rounded_div((denominator - numerator) * from + numerator * to, denominator)
+        ((denominator - numerator) * from + numerator * to)
+            .rounded_div(denominator)
             .try_into()
             .unwrap_or(u8::MAX)
     })
